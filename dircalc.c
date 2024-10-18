@@ -66,7 +66,7 @@ int List(const char *sDir)
                 List(sPath);
                 level--;
             } else {
-                filesize = file.nFileSizeHigh * (MAXDWORD+1) + file.nFileSizeLow;
+                filesize = ((unsigned long long)file.nFileSizeHigh << 32) | file.nFileSizeLow;
                 rootfiles++;
                 rootsize = rootsize + filesize;
                 if ((level < limit - 1) && (limit > 1) && (dironly == 0))
@@ -115,7 +115,7 @@ for (i = 1; i < argc; ++i)
 {
     if ((!strcmp(argv[i], "help")) || (!strcmp(argv[i], "help"))) 
     {
-        printf("\n DIRCALC 1.0 - Created by Shpati Koleka, MMXXI - MIT License.\n");
+        printf("\n DIRCALC 1.1 - Shpati Koleka, MMXXI - MIT License.\n");
         printf(" DIRCALC displays the disk usage in bytes for any given directory.\n\n");
         printf(" Usage: DIRCALC [/D] [/S size] [/L levels] [/A] [directory_location]\n\n");
         printf(" /D       Displays only the sizes of the DIRs, ommiting the FILEs.\n");

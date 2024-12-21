@@ -2,12 +2,22 @@
 #include <windows.h>
 #include <stdlib.h>
 
-unsigned long long size, filesize, dirsize, filenumber, filedir, dirnumber, minsize;
+unsigned long long size = 0, filesize = 0, dirsize = 0, filenumber = 0, filedir = 0, dirnumber = 0, minsize = 0;
 char s[] = "kMGTPE";
 char temp[3000];
-char *dir;
-int i, access, level, limit, dironly;
-float n;
+char *dir = NULL;
+int i = 0, access = 0, level = 0, limit = 0, dironly = 0;
+float n = 0.0;
+
+void remove_trailing_backslash(char *path)
+{
+    if (!path) return;
+    
+    size_t len = strlen(path);
+    if (len > 0 && path[len - 1] == '\\') {
+        path[len - 1] = '\0';
+    }
+}
 
 const char* format(unsigned long long number)
 {
@@ -51,6 +61,7 @@ int List(const char *sDir)
     if ((hFind = FindFirstFile(sPath, &file)) == INVALID_HANDLE_VALUE)
     {
         access = 0;
+        return -1;
     }
     do
     {   
@@ -72,7 +83,7 @@ int List(const char *sDir)
                 if ((level < limit - 1) && (limit > 1) && (dironly == 0))
                 {
                     if (filesize >= minsize)
-                        printf("%20s  FILE       1   %s\n", format(filesize), sPath);
+                        printf("%24s  FILE       1   %s\n", format(filesize), sPath);
                 } 
             }
         }
@@ -86,11 +97,9 @@ int List(const char *sDir)
     if ((level < limit) && (limit > 1))
     {
         if (dirsize >= minsize) 
-            if ((level < limit - 1) && (dironly ==0))
+            if (!((level < limit - 1) && (dironly ==0)))
             {
-                printf("%20s  -DIR  %6llu   %s\n", format(dirsize), filedir, sDir);
-            } else {
-                printf("%20s  +DIR  %6llu   %s\n", format(dirsize), filedir, sDir);
+                printf("%24s  +DIR  %6llu   %s\n", format(dirsize), filedir, sDir);
             }
         filedir = 0;
         dirsize = 0;
@@ -113,16 +122,16 @@ access = 1;
 
 for (i = 1; i < argc; ++i)
 {
-    if ((!strcmp(argv[i], "help")) || (!strcmp(argv[i], "help"))) 
+    if ((!strcmp(argv[i], "/H")) || (!strcmp(argv[i], "/h"))) 
     {
-        printf("\n DIRCALC 1.1 - Shpati Koleka, MMXXI - MIT License.\n");
+        printf("\n DIRCALC 1.2 - Shpati Koleka, MMXXI - MIT License.\n");
         printf(" DIRCALC displays the disk usage in bytes for any given directory.\n\n");
         printf(" Usage: DIRCALC [/D] [/S size] [/L levels] [/A] [directory_location]\n\n");
         printf(" /D       Displays only the sizes of the DIRs, ommiting the FILEs.\n");
         printf(" /S size  Displays only FILEs and DIRs whose byte-size is = or > than given.\n");
         printf(" /L level Displays the FILE and DIR sizes for the given level. \n");
         printf(" /A       Displays all files at all levels. \n");
-        printf(" HELP     Displays the help, i.e. this page.\n\n");
+        printf(" /H       Displays the help, i.e. this page.\n\n");
         printf(" Examples:\n\n");
         printf(" dircalc \n"); 
         printf(" dircalc C:\\Users\\Public\\Desktop \n");  
@@ -143,6 +152,9 @@ for (i = 1; i < argc; ++i)
         limit = 3000; 
     } else {
         dir = argv[i];
+        if (dir != NULL) {
+            remove_trailing_backslash(dir);
+        }
     }
 }
 i = 0;
@@ -163,8 +175,10 @@ while (n > 1024)
    n = n / 1024; 
    i++;
 }
-printf("\n%20s bytes",format(size));
+printf("\n%24s bytes",format(size));
 if ((i > 0) && (i < 9)) printf(" (%.2f %cB)", n, s[i-1]);
-printf(" in %llu FILEs within %llu DIRs\n", filenumber, dirnumber);
+printf(" in %s",format(filenumber));
+printf(" FILEs within %s DIRs\n",format(dirnumber));
+
 return 0;
 }

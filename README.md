@@ -1,6 +1,6 @@
 # DIRCALC
 
-DIRCALC is a small (9kb) but powerful and fast program that displays the disk usage in bytes for any given directory.
+DIRCALC is a tiny but powerful and fast program that displays the disk usage in bytes for any given directory. Works on Windows / Linux / macOS, BSD.
 
 ![DIRCALC](dircalc.png "DIRCALC")
 
@@ -16,7 +16,6 @@ DIRCALC is a small (9kb) but powerful and fast program that displays the disk us
 
 HELP     Displays the help, i.e. this page
 
-
 ## Examples:
 
 dircalc 
@@ -30,6 +29,3 @@ dircalc /D \\REMOTE\Folder\
 dircalc /S 1000000 
 
 dircalc /A 
-
-
-### DIRCALC 1.0 (c) Copyright Shpati Koleka MMXXI - MIT License

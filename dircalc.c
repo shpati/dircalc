@@ -296,13 +296,13 @@ static size_t fmt_line(char *dst, int kind, uint64_t size, uint64_t files, int d
             t[n++] = (char)('0' + (int)(v % 10));
             v /= 10;
         } while (v);
-        for (i = n; i < 6; i++) *d++ = ' ';
+        for (i = n; i < 9; i++) *d++ = ' ';
         while (n) *d++ = t[--n];
         memcpy(d, "   ", 3);
         d += 3;
     } else {
-        memcpy(d, kind == K_LINK ? "  LINK       1   " : "  FILE       1   ", 17);
-        d += 17;
+        memcpy(d, kind == K_LINK ? "  LINK          1   " : "  FILE          1   ", 20);
+        d += 20;
     }
     memcpy(d, path, plen);
     d += plen;
@@ -1146,7 +1146,7 @@ int main(int argc, char **argv)
 #endif
     }
 
-    if (G.levels != 0) out_str("\n                Size (b)  Type   Files   Name\n");
+    if (G.levels != 0) out_str("\n                Size (b)  Type      Files   Name\n");
 
     mu_init(&G.mu);
     cv_init(&G.cv_work);

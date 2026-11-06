@@ -1,5 +1,5 @@
 /*
- * DIRCALC 2.0 - displays the disk usage in bytes for any given directory.
+ * DIRCALC - displays the disk usage in bytes for any given directory.
  * Original (c) Copyright Shpati Koleka - MIT License.
  *
  * Single-file, pure C (C99) program for Windows and POSIX.
@@ -70,7 +70,7 @@ __declspec(dllimport) int __stdcall WideCharToMultiByte(unsigned, unsigned long,
 #include <stdlib.h>
 #include <string.h>
 
-#define VERSION "2.0"
+#define VERSION "2.1"
 
 /* ------------------------------------------------------------------ */
 /* Small utilities                                                     */
@@ -425,6 +425,7 @@ static const char *root_prepare(const char *root_utf8)
         full = (wchar_t *)xmalloc(((size_t)need + 8) * sizeof(wchar_t));
         fl = GetFullPathNameW(w, need, full, NULL);
         if (!fl || fl >= need) return "cannot resolve path";
+        if (fl == 2 && full[1] == L':') { full[2] = L'\\'; full[3] = 0; fl = 3; }
     }
     if (wcsncmp(full, L"\\\\?\\", 4) == 0) {
         g_open_root_w = full;

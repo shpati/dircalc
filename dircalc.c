@@ -464,6 +464,50 @@ typedef struct {
     char name[256];
 } DirIter;
 
+/* Hardlink tracking: an inode with st_nlink > 1 is charged once (like du).
+   Which name is charged depends on thread timing; totals are deterministic. */
+typedef struct { dev_t dev; ino_t ino; } HlKey;
+static HlKey *g_hl;
+static size_t g_hl_cap, g_hl_n;
+static pthread_mutex_t g_hl_mu = PTHREAD_MUTEX_INITIALIZER;
+
+static size_t hl_hash(dev_t d, ino_t i)
+{
+    uint64_t x = (uint64_t)i * 0x9E3779B97F4A7C15ULL ^ (uint64_t)d * 0xC2B2AE3D27D4EB4FULL;
+    x ^= x >> 32;
+    return (size_t)x;
+}
+
+/* Returns 1 if (dev, ino) was already seen, else records it and returns 0. */
+static int hl_seen(dev_t dev, ino_t ino)
+{
+    size_t m, h;
+    int seen = 0;
+    pthread_mutex_lock(&g_hl_mu);
+    if ((g_hl_n + 1) * 2 > g_hl_cap) {
+        size_t nc = g_hl_cap ? g_hl_cap * 2 : 1024, i;
+        HlKey *nt = (HlKey *)xcalloc(nc * sizeof(HlKey));
+        for (i = 0; i < g_hl_cap; i++) {
+            if (!g_hl[i].ino) continue;
+            h = hl_hash(g_hl[i].dev, g_hl[i].ino) & (nc - 1);
+            while (nt[h].ino) h = (h + 1) & (nc - 1);
+            nt[h] = g_hl[i];
+        }
+        free(g_hl);
+        g_hl = nt;
+        g_hl_cap = nc;
+    }
+    m = g_hl_cap - 1;
+    h = hl_hash(dev, ino) & m;
+    while (g_hl[h].ino) {
+        if (g_hl[h].ino == ino && g_hl[h].dev == dev) { seen = 1; break; }
+        h = (h + 1) & m;
+    }
+    if (!seen) { g_hl[h].dev = dev; g_hl[h].ino = ino; g_hl_n++; }
+    pthread_mutex_unlock(&g_hl_mu);
+    return seen;
+}
+
 static int dir_open(DirIter *it, const char *rel, size_t rlen)
 {
     char sbuf[4096];
@@ -522,7 +566,9 @@ static int dir_next(DirIter *it, Entry *e)
             e->size = 0;
         } else {
             e->kind = S_ISLNK(st.st_mode) ? K_LINK : K_FILE;
-            e->size = (uint64_t)st.st_size;
+            e->size = (uint64_t)st.st_blocks * 512; /* allocated space, as du */
+            if (st.st_nlink > 1 && e->kind == K_FILE && hl_seen(st.st_dev, st.st_ino))
+                e->size = 0; /* another name of an inode already counted */
         }
         return 1;
     }
@@ -688,6 +734,12 @@ static void node_done_locked(Node *n)
     while (n) {
         Node *p = n->parent;
         n->complete = 1;
+        /* A retained directory is final here (all descendants done): roll it
+           up into the nearest retained ancestor so DIR lines are cumulative. */
+        if (n->retained && p) {
+            p->owner->bytes += n->bytes;
+            p->owner->files += n->files;
+        }
         if (G.wait == n) cv_signal(&G.cv_print);
         if (!n->retained) {
             free(n->rel);

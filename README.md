@@ -1,4 +1,4 @@
-## dircalc
+## dircalc 
 
 dircalc is a tiny but powerful and fast program that displays the disk usage in bytes for any given directory. Works on Windows / Linux / macOS, BSD.
 
